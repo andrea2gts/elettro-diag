@@ -28,7 +28,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
-            padding-bottom: 30px;
+            padding-bottom: 80px; /* Spazio per il FAB */
         }
 
         header {
@@ -207,6 +207,130 @@
             color: white;
             box-shadow: 0 0 10px rgba(244, 67, 54, 0.6);
         }
+
+        /* FAB Button */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            font-size: 24px;
+            font-weight: bold;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            display: none; /* Nascosto nella home */
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            font-family: serif;
+            font-style: italic;
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Modale Guida */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 200;
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            width: 100%;
+            max-width: 600px;
+            height: 85vh;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 24px;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-close {
+            position: sticky;
+            top: 0;
+            float: right;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 210;
+        }
+
+        .modal-body h2 {
+            color: var(--primary-color);
+            margin-bottom: 16px;
+            font-size: 1.4rem;
+        }
+
+        .modal-body h3 {
+            color: #fff;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #444;
+            padding-bottom: 4px;
+        }
+
+        .modal-body ul {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .modal-body li {
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+
+        .modal-body strong {
+            color: #fff;
+        }
+
+        .highlight-box {
+            background-color: rgba(255, 152, 0, 0.1);
+            border-left: 4px solid var(--warning-color);
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 24px;
+            margin-bottom: 24px;
+        }
+        .highlight-box h3 {
+            color: var(--warning-color);
+            border: none;
+            margin-top: 0;
+        }
+        .highlight-box p {
+            margin-bottom: 12px;
+            color: #ddd;
+        }
     </style>
 </head>
 <body>
@@ -293,7 +417,7 @@
                     <input type="number" id="cable_l" inputmode="decimal" step="any" placeholder="Es. 150">
                 </div>
                 <div class="form-group">
-                    <label>Sezione conduttori (mm²) [Opzionale per calcolo]</label>
+                    <label>Sezione conduttori (mm²) [Opzionale]</label>
                     <input type="number" id="cable_s" inputmode="decimal" step="any" placeholder="Es. 6">
                 </div>
                 <button class="btn btn-primary" onclick="calculateCable()">Verifica Conformità</button>
@@ -305,21 +429,97 @@
                 <div style="background-color: #333; padding: 12px; border-radius: 8px; font-size: 0.9rem;">
                     <strong>Dettagli Tecnici:</strong><br>
                     - R misurata: <span id="res_misurata"></span> MΩ<br>
-                    - Soglia CEI 64-8: <span id="res_soglia"></span> MΩ<br>
-                    - R Specifica normalizzata: <span id="res_km"></span> MΩ·km
+                    - Soglia normativa: <span id="res_soglia"></span> MΩ<br>
+                    - R Specifica: <span id="res_km"></span> MΩ·km
                 </div>
                 <p id="cableNotes" style="margin-top:12px; font-size:0.85rem; color:#aaa;"></p>
             </div>
         </div>
     </div>
 
+    <!-- FAB Button per Info -->
+    <button id="infoFab" class="fab" onclick="openModal()">i</button>
+
+    <!-- Modale Guida Overlay -->
+    <div id="guideModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">X</button>
+            <div id="modalBody" class="modal-body">
+                <!-- Il contenuto della guida verrà iniettato qui da JS -->
+            </div>
+        </div>
+    </div>
+
     <script>
+        // --- TESTI DELLE GUIDE ---
+        const guidePV = `
+            <h2>Guida: Misurazione Dispersione Stringa FV</h2>
+            
+            <h3>1. Sicurezza e DPI</h3>
+            <ul>
+                <li><strong>Dispositivi di Protezione Individuale (DPI):</strong> Indossare guanti dielettrici (es. Classe 0 per 1000V), calzature isolanti e occhiali/visiera.</li>
+                <li>Operare su circuito aperto (sezionato dall'inverter).</li>
+            </ul>
+
+            <h3>2. Impostazione e Misurazione</h3>
+            <ul>
+                <li><strong>Strumento:</strong> Impostare il multimetro sulla misurazione di Tensione in Corrente Continua (V DC).</li>
+                <li><strong>Voc (Tensione a vuoto totale):</strong> Posizionare i puntali tra il polo positivo e il polo negativo della stringa. Registrare il valore.</li>
+                <li><strong>V(+) verso Terra:</strong> Mantenere un puntale sul polo positivo della stringa e posizionare l'altro direttamente sul morsetto di terra (PE) dell'impianto. Registrare il valore assoluto.</li>
+                <li><strong>V(-) verso Terra:</strong> Posizionare un puntale sul polo negativo della stringa e mantenere l'altro a terra. Registrare il valore assoluto.</li>
+            </ul>
+
+            <div class="highlight-box">
+                <h3>Capitolo Specifico: Impianti con Ottimizzatori (es. Tigo)</h3>
+                <p><strong>Perché la formula non si applica:</strong> La presenza di ottimizzatori annulla la ripartizione lineare della tensione. I convertitori DC/DC alterano i valori per l'MPPT, ed entra in gioco la funzione di <em>Rapid Shutdown</em> (tensione azzerata o limitata a 1V) se manca il segnale dell'inverter o del datalogger, rendendo inaffidabile la lettura ai capi della stringa.</p>
+                <p><strong>Procedure operative per la localizzazione:</strong></p>
+                <ul>
+                    <li><strong>Verifica da Portale:</strong> Accedere al monitoraggio (es. Tigo EI). Il modulo guasto andrà spesso offline o in protezione termica/elettrica, risultando facilmente individuabile a schermo.</li>
+                    <li><strong>Divide et Impera:</strong> Se la ricerca software non è possibile, salire sul tetto e sezionare fisicamente la stringa a metà. Testare l'isolamento delle due metà verso terra con il Megger. Procedere frazionando ulteriormente la metà in difetto fino a isolare il blocco incriminato.</li>
+                    <li><strong>Test del singolo blocco:</strong> Isolata la coppia sospetta, scollegare l'ottimizzatore dal pannello fotovoltaico. Testarli separatamente per individuare il componente responsabile. <em>Verificare sempre nei manuali le tensioni massime di test per non danneggiare l'elettronica dell'ottimizzatore.</em></li>
+                </ul>
+            </div>
+        `;
+
+        const guideCable = `
+            <h2>Guida: Verifica Isolamento Cavo Elettrico</h2>
+            
+            <h3>1. Sicurezza Preliminare</h3>
+            <ul>
+                <li><strong>Fuori Tensione:</strong> L'impianto <strong>DEVE</strong> essere completamente sezionato dalla rete elettrica. Prima di iniziare, verificare l'assenza di tensione tra tutti i conduttori con un tester.</li>
+            </ul>
+
+            <h3>2. Preparazione dell'Impianto</h3>
+            <ul>
+                <li><strong>Scollegamento Carichi:</strong> È tassativo staccare fisicamente tutti gli utilizzatori (elettrodomestici, lampade).</li>
+                <li><strong>Salvaguardia Elettronica:</strong> Scollegare o bypassare obbligatoriamente driver LED, inverter, UPS, schede elettroniche e scaricatori di sovratensione (SPD). Lasciarli connessi <strong>causerà danni irreversibili</strong> dovuti all'alta tensione iniettata dal Megger.</li>
+            </ul>
+
+            <h3>3. Esecuzione del Test</h3>
+            <ul>
+                <li><strong>Collegamento Puntali:</strong> Collegare i puntali dello strumento (es. Linea/Neutro cortocircuitati misurati verso il PE, oppure singolarmente conduttore attivo verso terra, o tra conduttori attivi).</li>
+                <li><strong>Iniezione Tensione:</strong> Impostare il misuratore d'isolamento alla tensione prevista dalla normativa (es. 500V DC per i normali circuiti civili 230/400V) e avviare il test.</li>
+                <li><strong>Stabilizzazione:</strong> Mantenere la misurazione attiva fino a quando il valore sul display non si stabilizza (capacità del cavo carica).</li>
+            </ul>
+
+            <h3>4. Conclusione del Test</h3>
+            <ul>
+                <li><strong>Scarica Capacitiva:</strong> A fine prova, il cavo rimane carico come un condensatore ad alta tensione. <strong>Non toccare i conduttori!</strong> Attendere la scarica automatica (se prevista dallo strumento) oppure scaricare i conduttori collegandoli a terra prima di manipolarli.</li>
+            </ul>
+        `;
+
         // --- NAVIGATION LOGIC ---
+        let currentActiveView = '';
+
         function openView(viewId, title) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             document.getElementById('headerTitle').innerText = title;
             document.getElementById('backBtn').style.display = 'block';
+            
+            // Gestione FAB e Variabile stato
+            currentActiveView = viewId;
+            document.getElementById('infoFab').style.display = 'flex';
             
             // Nascondi i risultati precedenti
             document.getElementById('pvResults').style.display = 'none';
@@ -331,7 +531,32 @@
             document.getElementById('homeView').classList.add('active');
             document.getElementById('headerTitle').innerText = 'ElettroDiag';
             document.getElementById('backBtn').style.display = 'none';
+            
+            currentActiveView = '';
+            document.getElementById('infoFab').style.display = 'none';
         }
+
+        // --- MODAL LOGIC ---
+        function openModal() {
+            const modalBody = document.getElementById('modalBody');
+            if (currentActiveView === 'pvView') {
+                modalBody.innerHTML = guidePV;
+            } else if (currentActiveView === 'cableView') {
+                modalBody.innerHTML = guideCable;
+            }
+            document.getElementById('guideModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+
+        // Chiudi il modale se l'utente clicca fuori dal contenuto
+        document.getElementById('guideModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
 
         // --- PV STRING LOGIC ---
         function calculatePV() {
@@ -358,15 +583,12 @@
             const toleranceMax = voc * 1.10;
 
             if (sumV >= toleranceMin && sumV <= toleranceMax) {
-                // Guasto a terra netto rilevato
                 badge.className = 'badge danger';
                 badge.innerText = 'DISPERSIONE RILEVATA';
                 
-                // Calcolo posizione
                 const faultRatio = vpos / voc;
                 let faultyPanel = Math.round(faultRatio * n);
                 
-                // Edge cases
                 if (faultyPanel === 0) {
                     report.innerHTML = "Il guasto a terra si trova sul <strong>cavo di Ritorno Positivo (+)</strong> o in prossimità immediata del <strong>MODULO 1</strong>.";
                     faultyPanel = 1; 
@@ -377,7 +599,6 @@
                     report.innerHTML = `Il guasto a terra si trova presumibilmente sul <strong>MODULO n. ${faultyPanel}</strong> (contando dal connettore Positivo).`;
                 }
 
-                // Generazione Grafica Pannelli
                 for (let i = 1; i <= n; i++) {
                     const panelDiv = document.createElement('div');
                     panelDiv.className = 'panel' + (i === faultyPanel ? ' faulty' : '');
@@ -385,12 +606,10 @@
                     graphic.appendChild(panelDiv);
                 }
             } else {
-                // Isolamento normale o tensioni "fantasma"
                 badge.className = 'badge success';
                 badge.innerText = 'NESSUNA DISPERSIONE FRANCA';
-                report.innerHTML = "La somma delle tensioni verso terra ("+sumV.toFixed(1)+"V) non corrisponde alla Voc della stringa ("+voc+"V).<br><br><strong>Conclusione:</strong> Isolamento Normale. Le tensioni rilevate sono probabilmente dovute a fluttuazioni capacitivo-elettrostatiche (scaricano a 0V tenendo i puntali collegati).";
+                report.innerHTML = "La somma delle tensioni verso terra ("+sumV.toFixed(1)+"V) non corrisponde alla Voc della stringa ("+voc+"V).<br><br><strong>Conclusione:</strong> Isolamento Normale. Le tensioni rilevate sono fluttuazioni elettrostatiche.";
                 
-                // Mostra i pannelli tutti sani
                 for (let i = 1; i <= n; i++) {
                     const panelDiv = document.createElement('div');
                     panelDiv.className = 'panel';
@@ -427,20 +646,15 @@
                 return;
             }
 
-            // Calcolo Resistenza in MegaOhm
             const r_megaOhm = r_val * r_unit_multiplier;
             
-            // Soglia normativa CEI 64-8
             let r_min_megaOhm = 1.0;
             if (vtest <= 250) {
                 r_min_megaOhm = 0.5;
             } else if (vtest <= 1000) {
                 r_min_megaOhm = 1.0;
-            } else {
-                r_min_megaOhm = 1.0; // Standard fallback
             }
 
-            // Resistenza specifica normalizzata a Km
             const r_km = r_megaOhm * (l / 1000);
 
             const resultsDiv = document.getElementById('cableResults');
@@ -456,22 +670,25 @@
             if (r_megaOhm < r_min_megaOhm) {
                 badge.className = 'badge danger';
                 badge.innerText = "GUASTO D'ISOLAMENTO";
-                report.innerHTML = "<strong>CRITICO:</strong> La resistenza misurata è INFERIORE al limite minimo normativo prescritto dalla CEI 64-8 per la tensione applicata.";
-                notes.innerText = "Raccomandazione: Sezionare la linea, scollegare i carichi intermedi e ripetere la misurazione per isolare il punto di guasto.";
+                report.innerHTML = "<strong>CRITICO:</strong> La resistenza misurata è INFERIORE al limite minimo normativo prescritto dalla CEI 64-8.";
+                notes.innerText = "Raccomandazione: Sezionare la linea e ripetere la misurazione per isolare il punto di guasto.";
             } else {
-                // Controllo warning per linee lunghe o usura
                 if (r_km < (r_min_megaOhm * 2)) {
                     badge.className = 'badge warning';
                     badge.innerText = "ISOLAMENTO DEGRADATO (A NORMA)";
-                    report.innerHTML = "<strong>ATTENZIONE:</strong> Il valore globale supera il limite minimo, ma calcolando la resistenza specifica al chilometro l'isolamento risulta degradato.";
-                    notes.innerText = "Raccomandazione: La linea è formalmente a norma, ma potrebbe presentare micro-infiltrazioni di umidità o degrado della guaina. Da monitorare.";
+                    report.innerHTML = "<strong>ATTENZIONE:</strong> Il valore globale supera il limite minimo, ma l'isolamento specifico risulta degradato.";
+                    notes.innerText = "Raccomandazione: La linea è formalmente a norma ma presenta micro-infiltrazioni o degrado guaina.";
                 } else {
                     badge.className = 'badge success';
                     badge.innerText = "LINEA CONFORME";
                     report.innerHTML = "<strong>OTTIMO:</strong> La resistenza d'isolamento rispetta i limiti normativi CEI 64-8 ed è adeguata alla lunghezza della tratta.";
-                    notes.innerText = "Nota: La misurazione è valida a patto che tutti gli utilizzatori (elettrodomestici, driver LED, scaricatori SPD) siano stati preventivamente scollegati dal circuito in test.";
+                    notes.innerText = "Nota: Test valido a condizione che tutti i carichi fossero scollegati dal circuito.";
                 }
             }
+        }
+    </script>
+</body>
+</html>
         }
     </script>
 </body>
